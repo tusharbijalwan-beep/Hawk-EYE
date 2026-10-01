@@ -1,0 +1,440 @@
+<title>Hawkeye View</title>
+<style>
+:root{
+  --ink:#12151c; --ink-soft:#3a4048; --paper:#f3f2ee; --surface:#ffffff; --surface-2:#eae8e1;
+  --border:#d8d5cc; --accent:#1f5f6b; --accent-soft:#e4eeee;
+  --good:#2f7a4f; --good-bg:#e7f1ea; --risk:#b23b3b; --risk-bg:#f8e9e8; --caution:#96650f; --caution-bg:#f6ecd8;
+  --mono-num:"JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e9e7df; --ink-soft:#b7b4a9; --paper:#0f1216; --surface:#171b21; --surface-2:#1e232a;
+    --border:#2c333c; --accent:#5aa3ad; --accent-soft:#16292c;
+    --good:#5db683; --good-bg:#132420; --risk:#e08787; --risk-bg:#2a1717; --caution:#dcae5a; --caution-bg:#2a2210;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e9e7df; --ink-soft:#b7b4a9; --paper:#0f1216; --surface:#171b21; --surface-2:#1e232a;
+  --border:#2c333c; --accent:#5aa3ad; --accent-soft:#16292c;
+  --good:#5db683; --good-bg:#132420; --risk:#e08787; --risk-bg:#2a1717; --caution:#dcae5a; --caution-bg:#2a2210;
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Public Sans", ui-sans-serif, system-ui, sans-serif;
+  line-height:1.55;
+}
+h1,h2,h3{ font-family:"Newsreader", Georgia, serif; text-wrap:balance; color:var(--ink); }
+.mono, .num, td.num, .chip, .stamp, .badge{ font-family:var(--mono-num); font-variant-numeric:tabular-nums; }
+
+.wrap{ max-width:1080px; margin:0 auto; padding:0 24px 96px; }
+
+/* Masthead */
+.masthead{
+  border-bottom:2px solid var(--ink);
+  padding:36px 0 20px;
+  margin-bottom:40px;
+  display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap;
+}
+.eyebrow{
+  font-family:var(--mono-num); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--accent); margin:0 0 10px;
+}
+.masthead h1{ font-size:2.6rem; font-weight:600; margin:0; letter-spacing:-0.01em; }
+.masthead .meta{ text-align:right; font-size:12.5px; color:var(--ink-soft); }
+.masthead .meta .stamp{ display:block; font-size:13px; color:var(--ink); margin-top:4px; }
+
+/* Memo block */
+.memo{ max-width:65ch; margin:0 0 48px; font-size:1.02rem; }
+.memo p{ margin:0 0 14px; }
+.memo strong{ color:var(--ink); }
+.verdict{
+  border-left:3px solid var(--accent); background:var(--accent-soft);
+  padding:16px 20px; margin:0 0 22px; font-size:1.05rem;
+}
+
+section{ margin-bottom:52px; }
+.section-head{ display:flex; align-items:baseline; gap:14px; margin-bottom:18px; }
+.section-head h2{ font-size:1.4rem; font-weight:600; margin:0; }
+.section-head .count{ font-size:12px; color:var(--ink-soft); font-family:var(--mono-num); }
+.section-note{ font-size:13px; color:var(--ink-soft); margin:-8px 0 18px; max-width:70ch; }
+
+/* Business Pulse scorecards */
+.pulse-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; }
+.pulse-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:18px 18px 16px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.pulse-card .line{ font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); }
+.pulse-card .figure{ font-size:1.7rem; font-weight:600; }
+.pulse-card .delta{ display:inline-flex; align-items:center; gap:5px; font-size:13px; width:fit-content; padding:2px 8px; border-radius:2px; }
+.delta.up{ background:var(--good-bg); color:var(--good); }
+.delta.down{ background:var(--risk-bg); color:var(--risk); }
+.delta.flat{ background:var(--surface-2); color:var(--ink-soft); }
+.pulse-card .sub{ font-size:12.5px; color:var(--ink-soft); }
+
+/* Flags */
+.flag{
+  display:grid; grid-template-columns:5px 1fr; gap:18px; background:var(--surface); border:1px solid var(--border);
+  border-radius:3px; margin-bottom:12px; overflow:hidden;
+}
+.flag > .stripe{ background:var(--risk); }
+.flag.caution > .stripe{ background:var(--caution); }
+.flag.info > .stripe{ background:var(--accent); }
+.flag .body{ padding:16px 20px 16px 0; }
+.flag .tag{
+  font-family:var(--mono-num); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--risk); margin-bottom:6px; display:block;
+}
+.flag.caution .tag{ color:var(--caution); }
+.flag.info .tag{ color:var(--accent); }
+.flag h3{ font-size:1.02rem; margin:0 0 6px; font-family:"Public Sans", sans-serif; font-weight:700; }
+.flag p{ margin:0; font-size:13.5px; color:var(--ink-soft); max-width:75ch; }
+
+/* Competitive table */
+.tbl-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:3px; }
+table{ width:100%; border-collapse:collapse; font-size:13.5px; min-width:520px; }
+th,td{ padding:9px 14px; text-align:left; border-bottom:1px solid var(--border); }
+th{ font-family:var(--mono-num); font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); background:var(--surface-2); }
+td.num, th.num{ text-align:right; }
+tr:last-child td{ border-bottom:none; }
+tr.self td{ background:var(--accent-soft); font-weight:600; }
+
+/* Reliability panel */
+.reliability{ background:var(--caution-bg); border:1px solid var(--caution); border-radius:3px; padding:20px 22px; }
+.reliability h3{ font-family:"Public Sans"; font-size:1rem; margin:0 0 10px; color:var(--caution); }
+.reliability ul{ margin:0; padding-left:18px; font-size:13.5px; }
+.reliability li{ margin-bottom:8px; }
+.reliability code{ font-family:var(--mono-num); font-size:12px; background:rgba(0,0,0,0.06); padding:1px 5px; border-radius:2px; }
+
+/* Appendix */
+details{ background:var(--surface); border:1px solid var(--border); border-radius:3px; margin-bottom:10px; }
+summary{
+  padding:14px 18px; cursor:pointer; font-weight:600; font-size:14px; list-style:none;
+  display:flex; justify-content:space-between; align-items:center; gap:12px;
+}
+summary::-webkit-details-marker{ display:none; }
+summary::after{ content:"+"; font-family:var(--mono-num); color:var(--ink-soft); font-size:16px; }
+details[open] summary::after{ content:"–"; }
+summary .owner{ font-size:11.5px; color:var(--ink-soft); font-weight:400; font-family:var(--mono-num); }
+.details-body{ padding:0 18px 18px; font-size:13.5px; }
+.details-body h4{ font-family:"Public Sans"; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); margin:16px 0 8px; }
+.details-body h4:first-child{ margin-top:2px; }
+.details-body p{ margin:0 0 8px; }
+.status-line{ display:flex; gap:8px; align-items:baseline; margin-bottom:4px; font-size:13px; }
+.status-line .k{ min-width:170px; color:var(--ink-soft); }
+.status-line .v{ font-family:var(--mono-num); }
+.chip{ display:inline-block; font-size:10.5px; padding:1px 7px; border-radius:2px; text-transform:uppercase; letter-spacing:.04em; }
+.chip.good{ background:var(--good-bg); color:var(--good); }
+.chip.risk{ background:var(--risk-bg); color:var(--risk); }
+.chip.caution{ background:var(--caution-bg); color:var(--caution); }
+
+footer{ margin-top:60px; padding-top:20px; border-top:1px solid var(--border); font-size:12px; color:var(--ink-soft); }
+
+@media (max-width:640px){
+  .masthead{ flex-direction:column; align-items:flex-start; }
+  .masthead .meta{ text-align:left; }
+  .masthead h1{ font-size:2rem; }
+}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,500&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <p class="eyebrow">Internal — Business Pulse</p>
+      <h1>Hawkeye View</h1>
+    </div>
+    <div class="meta">
+      Prepared for CEO · CBO · CPO · CXO
+      <span class="stamp">As of 25 Sep 2026, based on live dashboard reads</span>
+    </div>
+  </div>
+
+  <div class="memo">
+    <div class="verdict">
+      <strong>Bottom line:</strong> Trading activity is softening in the near term — real WoW/DoD declines on the platform's two largest volume lines (spot-adjacent Trading, and Futures) — while Options keeps growing share and holding fee take-rate. That's masked in places by a genuinely broken data layer: one SQL bug is live identically across three dashboards, and two separate backend pipelines are down, so several product-health metrics (retention, acquisition, liquidation exposure) are currently unmeasurable, not just softer.
+    </div>
+    <p>Five business lines were reviewed end-to-end across 11 dashboards: Options, Futures, Spot/Trading, Advisory (expert calls), and cross-platform Product engagement. The numbers below are what's actually rendering on each dashboard as of today — anything graphical-only or pipeline-broken is flagged rather than estimated.</p>
+  </div>
+
+  <section>
+    <div class="section-head"><h2>Business Pulse</h2><span class="count">5 lines</span></div>
+    <div class="pulse-grid">
+
+      <div class="pulse-card">
+        <span class="line">Options</span>
+        <span class="figure">$5B <span style="font-size:.9rem;font-weight:400;color:var(--ink-soft);">/ 7d</span></span>
+        <span class="delta up">▲ +11% vs 30d daily avg</span>
+        <span class="sub">$659M today · fee take-rate steady ~2.0% of premium · 67% of orders same-day expiry</span>
+      </div>
+
+      <div class="pulse-card">
+        <span class="line">Futures (product)</span>
+        <span class="figure">$4.46B</span>
+        <span class="delta down">▼ −11.3% WoW</span>
+        <span class="sub">Order Exit Failure % chart broken (SQL error) · liquidation &amp; segmentation charts pipeline-down</span>
+      </div>
+
+      <div class="pulse-card">
+        <span class="line">Trading (platform)</span>
+        <span class="figure">$1.54B <span style="font-size:.9rem;font-weight:400;color:var(--ink-soft);">/ day</span></span>
+        <span class="delta down">▼ −3.6% DoD</span>
+        <span class="sub">Gross fees $506k (−13.7%) · take-rate 0.033% (−10.5%) — fee compression tracking volume down</span>
+      </div>
+
+      <div class="pulse-card">
+        <span class="line">Advisory (crypto book)</span>
+        <span class="figure">63.2% <span style="font-size:.9rem;font-weight:400;color:var(--ink-soft);">hit-rate</span></span>
+        <span class="delta flat">≈ 489 picks/mo · %ROI 10.1%</span>
+        <span class="sub">3 suppliers at 0% approval still active on roster · one supplier: best risk-reward, worst execution</span>
+      </div>
+
+      <div class="pulse-card">
+        <span class="line">Advisory (US Perps)</span>
+        <span class="figure">70.4% <span style="font-size:.9rem;font-weight:400;color:var(--ink-soft);">hit-rate</span></span>
+        <span class="delta flat">17.5 picks/wk · 35/mo</span>
+        <span class="sub">Recurring supplier-reported bug: US expert picks calls "don't terminate automatically"</span>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Flags for leadership</h2><span class="count">6</span></div>
+
+    <div class="flag">
+      <div class="stripe"></div>
+      <div class="body">
+        <span class="tag">Critical — Engineering</span>
+        <h3>The same column bug is broken identically on three dashboards</h3>
+        <p><code class="mono">order_exit_failure_perc cannot be resolved</code> — Product dashboard, Daily Product Metrics, and Futures product Metrics all throw the same unresolved-column error on their Order Exit Failure % chart. One schema change, unfixed, silently blinding exit-failure visibility across both Options and Futures product lines.</p>
+      </div>
+    </div>
+
+    <div class="flag">
+      <div class="stripe"></div>
+      <div class="body">
+        <span class="tag">Critical — Data infrastructure</span>
+        <h3>Two separate backend pipelines are down right now</h3>
+        <p><code class="mono">Cefi-Dev-DBT-Databricks</code> is stalled across Options (Market Level Data, most of Retention), Futures Tracker (5 of 7 tabs — Acquisition, Retention, Resurrection, OKR View, Targets-Progress), and Futures product Metrics (liquidation &amp; user-segmentation charts). Separately, <code class="mono">Cefi-SQL-Endpoint-Analysis</code> has taken down all of Daily Metrics' Resurrection, Retention, and AnA tabs. Between the two, leadership currently has no visibility into retention or resurrection health on either Options or Futures.</p>
+      </div>
+    </div>
+
+    <div class="flag caution">
+      <div class="stripe"></div>
+      <div class="body">
+        <span class="tag">Caution — Vendor management</span>
+        <h3>Three advisory suppliers are 0% approved and still on the roster</h3>
+        <p>chahat@marketwind.in (54 calls, 100% rejected), rachit@marketwind.in (3 calls), and bitnomics.research@marketwind.in (3 calls) show zero approved picks. Separately, krishna@marketwind.in has the single best risk-reward ratio of any supplier (1.58) but the worst hit-rate (37.5%) and a 60% rejection rate — the setups look good on paper and fail in execution or approval. Worth a supplier-quality review before the next contract cycle.</p>
+      </div>
+    </div>
+
+    <div class="flag caution">
+      <div class="stripe"></div>
+      <div class="body">
+        <span class="tag">Caution — Data quality</span>
+        <h3>Read the "latest week" numbers with suspicion</h3>
+        <p>Two independent dashboards (Daily Metrics' CLM tab, and Crypto Market Volume) show the current/most-recent week collapsing to near-zero across every metric and every exchange — including Binance's own spot volume dropping from $71.8B to $322M week-over-week, which isn't a real market move. This reads as a partial/in-progress data bucket, not a genuine crash. Don't quote current-week numbers from either dashboard without confirming the period is closed.</p>
+      </div>
+    </div>
+
+    <div class="flag info">
+      <div class="stripe"></div>
+      <div class="body">
+        <span class="tag">Watch — Engagement</span>
+        <h3>Home Expert Picks engagement is fading</h3>
+        <p>Home_CLM_experts_picks_clicked has fallen from ~5.5% of homepage clicks in early September to 2.7% in the latest week, while Portfolio_NAV_clicked has climbed to 17.7%. Worth a look at whether this is placement/algorithm-driven or genuine interest decline, given Expert Picks' role in the Advisory funnel.</p>
+      </div>
+    </div>
+
+    <div class="flag info">
+      <div class="stripe"></div>
+      <div class="body">
+        <span class="tag">Watch — Ownership</span>
+        <h3>Advisory Business Metrics Dashboard hasn't been touched in 8 months</h3>
+        <p>Data still appears to refresh, but the dashboard itself is stale on ownership/maintenance — worth confirming someone still owns this before leadership relies on it for Advisory's platform-contribution numbers (currently: 0.34% of platform volume, 3.8% of platform users, weekly).</p>
+      </div>
+    </div>
+
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Competitive position — Futures</h2><span class="count">weekly, global</span></div>
+    <p class="section-note">Global Futures Volume by exchange, week of Sep 14–20 2026 (Crypto Market Volume dashboard).</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Exchange</th><th class="num">Weekly Volume</th></tr></thead>
+        <tbody>
+          <tr><td>Binance</td><td class="num">$342B</td></tr>
+          <tr><td>OKEx</td><td class="num">$169B</td></tr>
+          <tr><td>Bybit</td><td class="num">$104B</td></tr>
+          <tr><td>Gate.io</td><td class="num">$91.8B</td></tr>
+          <tr><td>Coinbase</td><td class="num">$54.5B</td></tr>
+          <tr><td>Bitget</td><td class="num">$47.7B</td></tr>
+          <tr><td>Delta India</td><td class="num">$21B</td></tr>
+          <tr><td>Kraken</td><td class="num">$7.37B</td></tr>
+          <tr><td>Huobi</td><td class="num">$9.95B</td></tr>
+          <tr><td>Deribit</td><td class="num">$7.11B</td></tr>
+          <tr><td>KuCoin</td><td class="num">$6.97B</td></tr>
+          <tr class="self"><td>CoinDCX</td><td class="num">$5.57B</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="section-note" style="margin-top:14px;">CoinDCX sits last of 12 tracked exchanges on futures volume — under 2% of Binance's scale. Two genuine bright spots elsewhere: the Global Derivatives Volume Ratio trend shows CoinDCX's share of Binance-comparable volume roughly quadrupling over the tracked period (0.20%→0.82%), and CoinDCX is recorded as first-to-list exchange on every recent new token listing checked (PONS, WENSOL, MARSCOIN, CASHCAT, PIPEDOG, FLOCK, DGAI).</p>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Data reliability notice</h2></div>
+    <div class="reliability">
+      <h3>What not to trust yet</h3>
+      <ul>
+        <li><strong>Retention &amp; resurrection are dark</strong> for both Options and Futures — <code>Cefi-Dev-DBT-Databricks</code> and <code>Cefi-SQL-Endpoint-Analysis</code> outages between them cover nearly every retention chart reviewed.</li>
+        <li><strong>Order Exit Failure %</strong> is unmeasurable platform-wide (Options, Futures, Product) until the <code>order_exit_failure_perc</code> column issue is fixed.</li>
+        <li><strong>Latest-week figures</strong> on Daily Metrics (CLM) and Crypto Market Volume are very likely partial-period artifacts — treat as provisional.</li>
+        <li><strong>Delta volumes in CoinDCX ($)</strong> chart (Futures product Metrics) is broken — missing metric definition (<code>futures_volume</code> does not exist).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Appendix — per-dashboard detail</h2><span class="count">11 dashboards</span></div>
+    <p class="section-note">Collapsed by default. Expand for the underlying numbers behind each headline above.</p>
+
+    <details>
+      <summary>Options Business Dashboard <span class="owner">id 676</span></summary>
+      <div class="details-body">
+        <h4>Headline (Summary tab)</h4>
+        <div class="status-line"><span class="k">Notional Volume</span><span class="v">$659M / $5B / $17.8B (1d / 7d / 30d)</span></div>
+        <div class="status-line"><span class="k">Premium Volume</span><span class="v">$2.13M / $17.4M / $60M</span></div>
+        <div class="status-line"><span class="k">Users</span><span class="v">7.12k / 17.2k / 36.7k</span></div>
+        <div class="status-line"><span class="k">Fees</span><span class="v">$42.7k / $328k / $1.14M</span></div>
+        <div class="status-line"><span class="k">Trades</span><span class="v">61.6k / 453k / 1.66M</span></div>
+        <h4>Structural</h4>
+        <p>Same-day expiry (T0) is 67% of orders, 69% of notional, 47% of premium quarter-to-date. Fee take-rate holds ~1.9–2.0% of premium across all three windows.</p>
+        <h4>Data quality</h4>
+        <p>Access-date cohort table's largest bucket is untagged (<code class="mono">N/A</code>): $28.3B notional, 48.8k users — bigger than every dated cohort combined.</p>
+        <h4>Status</h4>
+        <p><span class="chip caution">Pipeline down</span> Market Level Data tab and most of Retention tab — <code class="mono">Cefi-Dev-DBT-Databricks</code>.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Futures Tracker <span class="owner">id 597</span></summary>
+      <div class="details-body">
+        <h4>Live (Summary tab only)</h4>
+        <p>Global Derivatives Volume Ratio: Binance-side 0.20%→0.82%, Delta-side 0.07%→0.32% (Jan 2025–Sep 2026 trend). Futures Volume — Delta India vs CoinDCX: Delta ratio spiked to 99.5% then fell sharply to 48.7% in the latest month.</p>
+        <h4>Status</h4>
+        <p><span class="chip risk">5 of 7 tabs down</span> Acquisition, Retention, Resurrection, OKR View, Targets - Progress all fully stalled on <code class="mono">Cefi-Dev-DBT-Databricks</code>. Only Summary tab has live data, and most of it is dense multi-series charts not reliably readable as exact numbers.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Product dashboard <span class="owner">id 776 · Anjani Janyavula</span></summary>
+      <div class="details-body">
+        <h4>Live</h4>
+        <p>Transacting users range ~60k–150k over the period (product level) and ~60k–140k (products-traded level) — graphical, axis range only.</p>
+        <h4>Broken</h4>
+        <p><span class="chip risk">SQL error</span> Order exit failure % — <code class="mono">order_exit_failure_perc</code> unresolved column.<br><span class="chip caution">No data</span> DAU/MAU and WAU/MAU (logged-in users).</p>
+        <h4>Home engagement (real weekly data, Jul 20–Sep 21)</h4>
+        <p>Portfolio_NAV_clicked up to 17.7% (from ~14%). Home_CLM_experts_picks_clicked down to 2.7% (from ~5.5%). Bottom_NAV dominates at 34–38% of all clicks.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Daily Product Metrics <span class="owner">id 730 · Nitish Amnerkar</span></summary>
+      <div class="details-body">
+        <h4>Live — Daily Contact Ratio by Main Menu, Sep 11–24</h4>
+        <p>Total contact ratio steady 1.85%–2.36%. KYC/Bank Account is the top driver, peaking 0.52% on Sep 19–20 (elevated vs period start).</p>
+        <h4>Broken</h4>
+        <p><span class="chip risk">SQL error</span> Order exit failure % — same <code class="mono">order_exit_failure_perc</code> bug.<br><span class="chip caution">No data</span> Uninstalls (#).</p>
+        <p>Most other charts (Global Derivatives Volume Ratio, Delta vs CoinDCX, Options/Spot volume, acquisition funnels) are graphical-only, titles captured but not extractable.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Daily Metrics <span class="owner">id 797 · Ishika Kadam</span></summary>
+      <div class="details-body">
+        <h4>Live — CLM Metrics, weekly by channel, Jun 29–Sep 21</h4>
+        <p>Prior week (Sep 14): DTU 276k, New FNAPs 4.33k, FNAP Volume $229M. Latest week (Sep 21) shows a sharp drop across the board: DTU 240k, New FNAPs 2.96k, FNAP Volume $113M, NAP→FNAP conversion 23.3% (down from ~41% peak in July). Same pattern repeats across Referral, Organic, Marketing, and KOL channel breakouts.</p>
+        <p><span class="chip caution">Unconfirmed</span> Likely a partial-period artifact (same pattern as Crypto Market Volume's collapsed latest week) rather than a real decline — do not treat as confirmed without checking period completeness.</p>
+        <h4>Status</h4>
+        <p><span class="chip risk">Pipeline down</span> Resurrection &amp; Retention metrics and AnA tabs entirely stalled — <code class="mono">Cefi-SQL-Endpoint-Analysis</code> (a different outage than the Databricks one affecting Options/Futures).</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Crypto Market Volume <span class="owner">id 9 · Kartik Arjaria</span></summary>
+      <div class="details-body">
+        <h4>Live — exchange-level competitive table, week of Sep 14–20</h4>
+        <p>See Competitive Position table above for Futures. Global Spot Volume same week: Binance $71.8B, Coinbase $16.8B, OKEx $16.4B ... CoinDCX $80.4M — a scale gap large enough it may be measuring a specific pair/segment subset rather than total CoinDCX spot volume; flagging the mismatch rather than asserting cause.</p>
+        <p>First-to-list tracker: CoinDCX recorded first-to-list on every recent new listing checked (PONS, WENSOL, MARSCOIN, CASHCAT, PIPEDOG, FLOCK, DGAI, Aug 31–Sep 8).</p>
+        <p><span class="chip caution">Unconfirmed</span> Latest week (Sep 21–27) collapses to near-zero across every exchange including Binance — clearly a partial/in-progress bucket, exclude from any read.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Trading Volumes <span class="owner">id 15 · Kartik Arjaria</span></summary>
+      <div class="details-body">
+        <h4>Live — Summary tab, as of Sep 24 (day-over-day)</h4>
+        <p>Volume $1.54B (−3.6%) · Gross Fees $506k (−13.7%) · Gross Take Rate 0.033% (−10.5%).</p>
+        <p>Source Level, VIP Level, and Pair Level tabs present but graphical/too granular (hundreds of pairs) to extract further.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Futures product Metrics <span class="owner">id 760 · Parth Joshi</span></summary>
+      <div class="details-body">
+        <h4>Live</h4>
+        <p>Volume $4.46B, −11.3% week-over-week.</p>
+        <h4>Broken</h4>
+        <p><span class="chip risk">SQL error</span> Order Exit Failure % (Futures) — same <code class="mono">order_exit_failure_perc</code> bug, third dashboard affected.<br><span class="chip risk">Metric missing</span> Delta volumes in CoinDCX ($) — <code class="mono">futures_volume</code> metric does not exist.</p>
+        <h4>Status</h4>
+        <p><span class="chip caution">Pipeline down</span> % users liquidated, liquidation/trading revenue split, retention trendline, and all 5 User Segmentation Analysis charts — <code class="mono">Cefi-Dev-DBT-Databricks</code>.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>US Perps | Advisory Dashboard <span class="owner">id 2804 · Saurabh Mehta</span></summary>
+      <div class="details-body">
+        <h4>Live — Overview, last week</h4>
+        <p>Hit Rate (terminated calls) 70.37% · 35 calls · 0% cancelled · 7 picks/day, 17.5/week · Supplier success rate 57.6%.</p>
+        <h4>Supplier scorecard</h4>
+        <p>rajneesh.dubey@marketwind.com 73.91% (30 calls) · santoshpatidar005@gmail.com 66.67% (3 calls) · yashkhandelwal@marketwind.in 0.00% (2 calls, small sample).</p>
+        <h4>Operational flag</h4>
+        <p>Multiple July call cancellations cite "issue going on with US expert picks where calls don't terminate automatically" — a recurring bug reported directly in supplier notes.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Advisory Expert Calls Dashboard <span class="owner">id 476 · Saumya Maheshwari</span></summary>
+      <div class="details-body">
+        <h4>Live — Overview, current month</h4>
+        <p>Hit-rate (approved &amp; TP/SL hit) 66.06% · Hit-rate overall 63.19% · %ROI 10.10% · Cancelled 2.75% · Approval TAT 3.89 min · 489 new picks/month.</p>
+        <h4>Supplier hit-rate (approved calls)</h4>
+        <p>Top: jainarchana982@gmail.com 76.19%. Bottom: krishna@marketwind.in 37.50% — despite having the best average risk-reward ratio (1.58) of any supplier.</p>
+        <h4>Non-performing suppliers still active</h4>
+        <p>chahat@marketwind.in — 54 calls, 100% rejected. rachit@marketwind.in — 3 calls, 100% rejected. bitnomics.research@marketwind.in — 3 calls, 100% rejected.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Advisory Business Metrics Dashboard <span class="owner">id 659 · Saumya Maheshwari · last edited 8mo ago</span></summary>
+      <div class="details-body">
+        <h4>Live — Summary tab</h4>
+        <p>Last week: Volume 0.34% of platform, Revenue 0.35%, Volume-weighted ROI 2.46%, Orders 0.32%, Users 3.80%. Last month: Volume 0.47%, Revenue 0.50%, ROI 5.13%, Orders 0.50%, Users 4.75%.</p>
+        <p>Weekly ROI trend is volatile: 7.3% (Aug 31) → 4.9% (Sep 21) → 2.5% (Sep 14) → −1.5% (Sep 7), including one negative week.</p>
+        <p><span class="chip caution">Ownership</span> Dashboard not edited in 8 months despite data still refreshing — confirm active ownership before leadership relies on it.</p>
+      </div>
+    </details>
+
+  </section>
+
+  <footer>
+    Compiled from live reads of 11 internal Superset dashboards, 25 Sep 2026. Figures marked "graphical" or "pipeline-down" in the appendix were not extractable with confidence and are excluded from the headline numbers above by design — this is a floor, not a ceiling, on what these dashboards actually contain.
+  </footer>
+
+</div>
