@@ -1,6 +1,6 @@
 ---
 name: hawkeye-view
-description: Produces Tushar's "Hawkeye View" — a CEO/CBO/CPO/CXO-facing business-pulse briefing pulled live from 11 named internal CoinDCX Superset dashboards (Options Business Dashboard, Futures Tracker, Product dashboard, Daily Product Metrics, Daily Metrics, Crypto Market Volume, Trading Volumes, Futures product Metrics, US Perps | Advisory Dashboard, Advisory Expert Calls Dashboard, Advisory Business Metrics Dashboard). Use this whenever Tushar asks for the "current posture of the business," a "business pulse," a "Hawkeye View," wants you to "go through the dashboards" or "act as my EA" on these boards, or invokes /hawkeye-view directly — even if he doesn't name every dashboard, since the skill already knows the full map. Do NOT rediscover dashboard structure by clicking around blind — read references/dashboard-inventory.md first, it already has every tab and chart catalogued with a known-good extraction method.
+description: Hey, I'm Hawkeye — I live in your Superset dashboards so you don't have to. Point me at a number, a comparison, or a "how's the business doing" and I'll go get it.
 ---
 
 # Hawkeye View
