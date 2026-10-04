@@ -1,6 +1,5 @@
 # Hawkeye View
-
-A Claude Code Agent that answers business questions straight out of Superset — ask in plain
+Agent that answers business questions straight out of Superset — ask in plain
 language, get a real number back, no dashboard-clicking.
 
 ## Capabilities
