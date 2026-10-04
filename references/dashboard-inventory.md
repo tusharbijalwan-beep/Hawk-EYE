@@ -241,13 +241,35 @@ as page text.** Status flipped to live.
 2026-09-25) — the dashboard has grown substantially. Treat this section as current; the
 2026-09-25 version undercounted both chart volume and the severity of the breaches-tab bug.*
 
-**KPI dictionary (built into the dashboard, tab 1 intro panel)** — read this before quoting any
-metric: Transacting Users = ≥1 order in period, in any product. **Product level** counts are
-overlapping (a user active in futures+spot counts in both); **Products traded level** is the
-non-overlapping combination split (e.g. "Futures_and_spot"). ATPU = orders/transacting users. AVPU
-= volume/transacting users. AOV = volume/orders. DTU/DAU = % of daily actives who place ≥1 order.
-Transaction Retention = % of a period's transactors who transact again in the next window. Fnap
-Eligible% = % of ever-NAP base that places ≥1 order (NAP→FNAP cross-sell tracking).
+**KPI dictionary (built into the dashboard, tab 1 intro panel) — full version, supplied by Tushar
+2026-10-04, supersedes the shorter paraphrase previously here:**
+
+*Filters:* User type = segment by which product(s) (futures/options/spot) a user has traded
+historically. Date range = inclusive. Acquisition Channel = source of user acquisition. Months
+since acquisition = months since signup. Futures Persona = futures-only behavioral tagging (High
+Freq, Swing, Bluechip, Explorer). Superset time grain & date granularity = both filters must be
+set together to change the chart's time bucket (day/week/month). New vs Old = New if signup <30
+days ago, else Old.
+
+*KPIs:*
+1. Product considered = Spot, Futures, Options only, across this whole dashboard.
+2. Transacting Users = placed ≥1 order in the period, in any product.
+3. Product level = transacting users per product — **overlapping** (a futures+spot user counts in both).
+4. Product(s) traded level = transacting users by unique product-combination — **non-overlapping** (e.g. "spot only", "futures+spot", "futures+spot+options").
+5. Orders = count of distinct orders placed.
+6. Volume = total volume of orders placed.
+7. ATPU = orders ÷ distinct transacting users.
+8. AVPU = volume ÷ distinct transacting users.
+9. AOV = volume ÷ orders.
+10. **DAU = unique count of signed-up users who opened the app at least once in the period — this is an app-open metric, NOT a transacting/ordering metric.** Correction, 2026-10-04: earlier Hawkeye answers this session used "Transacting Users" (KPI #2) as a DAU proxy for Futures — per this dictionary, that's actually wrong; DAU and Transacting Users are two different KPIs, and the dashboard's own DTU/DAU ratio (#11) exists precisely because they're not the same population. Don't conflate them going forward — if asked for DAU specifically, that's an app-open count, not an order count.
+11. DTU/DAU = % of DAU (app-openers) who also place ≥1 order in the period.
+12. App opens/user = app opens ÷ unique users.
+13. Sessions/user = sessions ÷ unique users (a session ends after 30 consecutive minutes of inactivity).
+14. Timespent/user = total timespent on app ÷ unique users (excludes background app time).
+15. Products per user = avg. distinct products a user has transacted in, lifetime.
+16. Non-login user app activity = unique device_id's active on the app (i.e. activity without a logged-in user).
+17. Transaction Retention = % of a period's transactors who transact again in the next window (day/week/month).
+18. Fnap Eligible% = % of ever-NAP base that places ≥1 order in the period (NAP→FNAP cross-sell tracking).
 
 ### Tab: Product metrics (19 charts, id range 6709–7813)
 All of the below are now **text** via View-as-table (date range pulled: 2026-07-24 onward, capture
@@ -266,7 +288,7 @@ higher slice cap for full history):
 - Logout users app activity — 82k-122k/day, no trend
 - Transaction retention(%) - Product level — options retention (58-73%) exceeds futures (60-78%), both far exceed spot (29-35%)
 - Fnap eligible percentage(%) — flat ~0.48%-0.72%
-- **DAU/MAU (Logged in users) / WAU/MAU (Logged in users) — View-as-table modal opens but renders completely empty (no table, no "no results" text either).** Confirms the 2026-09-25 "no-data" tag, but the failure mode is actually a blank render, not a clean empty-query message — worth a data-eng ticket, this is not behaving like other no-data charts on this platform.
+- **DAU/MAU (Logged in users) / WAU/MAU (Logged in users) — chart ids 7812/7813, correction 2026-10-04: NOT actually empty, just stale.** Any recent-date filter (default view, or even a "last 30 days" style window) returns zero rows and looks like the previously-logged blank render — but `fetch_chart.sh` with a wide date range (`2024-01-01 : 2026-10-04`) proves the underlying dataset `dev_cefi.cube_app_activity_dau_wau_metrics` has real history from mid-2025 through **2026-04-07, then nothing** — the pipeline has been dead for ~6 months, not permanently/structurally empty. **Also: the last 1-2 weeks of real data before the cutoff (late Mar–Apr 7 2026) show an abnormal spike** (DAU/MAU jumping from a steady ~20-29% band to ~38-42%; WAU/MAU spiking to 80.89% on Mar 30 vs a steady ~53-57% band) — a denominator-collapse artifact as the trailing-30-day MAU window ran out of future days near the pipeline's death, not a real usage spike. Last trustworthy reading: DAU/MAU ~22% (Mar 31 2026), WAU/MAU ~53-57% (mid-March 2026). Platform-wide ("logged in users"), not split by product — doesn't answer a product-specific (e.g. Futures) MAU question. Worth a data-eng ticket on the 6-month-dead pipeline, separate from the "silently dead" framing used elsewhere in this doc.
 
 ### Tab: Product metrics -Dimension level (5 charts, id range 6803–7142)
 All **text** via View-as-table:
@@ -461,8 +483,8 @@ broken/dead without a longer-timeout retry first.*
 Single scrolling page, no tabs — 8 sections, 39 charts total. Scroll to load each section.
 
 ### Section: Business Health Metrics
-- Volume ($) — **text** — $3.73B week of Sep 21, **−33% WoW — a real, sharp drop worth flagging**, not a flap artifact (confirmed live on retry)
-- Open Interest — down to $924M from $1.56B the prior week, same magnitude of decline as Volume
+- Volume ($) — **text** — $3.73B week of Sep 21 per 2026-10-01 pull; **correction 2026-10-04: this read as an isolated dip, not a trend** — daily volume through Oct 2-3 shows the business climbing again ($555M→$1.11B/day late Sep into Oct, Oct 3 Sat low is the normal weekend pattern)
+- Open Interest — **correction 2026-10-04: the "$924M, down from $1.56B" read was a snapshot of a trough, not a decline trend.** Fresh weekly pull shows OI climbing steadily from $627M (Sep 1) to $1.95B (Sep 28) — the opposite direction from what was logged 2026-10-01. Don't cite the old $924M figure as current or as evidence of a drop.
 - Transacting Users(#), ARPU ($), AVPU ($) - COINDCX — real data pulled, see `/tmp/futurespm_extract.jsonl`
 
 ### Section: Competitor Analysis
@@ -589,32 +611,143 @@ Onboarding Steps - Absolute numbers, Onboarding funnels TAT.
 - 8548 — same idea but a differently-windowed variant ("Onboarding steps converted users (#) 2") — gives smaller numbers than 8547 for the same weeks (a tighter conversion-window definition); don't mix the two without noting which one a figure came from
 - 8549 — micro-funnel absolute counts (KYC-\>BAV-\>Deposit-\>NAP-\>FNAP only, not the pre-KYC steps)
 
-**Confirmed systemic bug, found 2026-10-01, affects the entire `dev_cefi.cube_onboarding_funnels`
-percentage-chart family — not an isolated chart.** Three charts tested against the raw counts in
-8547, three confirmed broken:
-- Chart 8462 ("BAV -> Deposit%"): reports 241%-336% — impossible on its face, the giveaway
-- Chart 8456 ("Signup->NAP%"): reports ~18-34% vs. real ~4-7% (raw NAP/Signups) — **inflated ~4x,
-  but still looks like a totally plausible percentage, no giveaway at all**
-- Chart 8453 ("Signup->KYC%"): reports ~37-49% vs. real ~7-10% — **inflated ~4.6-5x, same silent
-  pattern**
+**MAJOR CORRECTION, 2026-10-04: the "Signup->KYC is really only 7-10%, inflated to 37-49%" finding
+below (originally logged 2026-10-01) was itself wrong, and is retracted.** It was built on a bad
+cross-check: dividing 8547's trustworthy DISTINCT KYC count by 8547's own `Signups` column — which
+uses `count(user_id)`, **not** `count(distinct user_id)`. That Signups column is itself inflated by
+the same fan-out (confirmed: true distinct weekly signups, from chart 9322's
+`count(distinct case when signup_date is not null then user_id end)`, run ~43k-80k/week in
+Jul-Sep 2026, vs. 8547's non-distinct Signups column reporting ~250k-400k/week for the same weeks —
+roughly 5x inflated). Dividing a correct numerator by that bad denominator understated the true
+rate, not overstated it. **The real root-cause finding, verified properly this time (distinct
+signups from chart 9322 against distinct KYC from 8547, across 13 separate weeks, Jul-Sep 2026):
+chart 8453's own reported Signup->KYC% tracks the independently-computed distinct-vs-distinct ratio
+within 1-2.5 percentage points, every single week, no exceptions.** Chart 8453 was never broken.
 
-All three share the same SQL shape: `SUM(<x>_converted)/COUNT(user_id)` (not `COUNT(DISTINCT
-user_id)`), grouped by week, against `dev_cefi.cube_onboarding_funnels`. The underlying table is
-almost certainly fanning out multiple rows per user (a join producing duplicates), and the
-numerator and denominator don't inflate by the same factor, so the ratio doesn't cancel out — it
-comes out wrong by a different multiple each time, with no error and no out-of-range tell on two of
-the three charts. **Treat every percentage chart on this dataset (8453, 8454, 8456, 8459, 8462,
-8531, and likely the macro-funnel tab's whole chart set) as unverified until cross-checked against
-raw counts (chart 8547 or 8549) — don't just check the ones that happen to exceed 100%, since most
-of them won't.** This is now a standing rule, not a per-chart check: **for any chart on
-`dev_cefi.cube_onboarding_funnels` whose name contains a bare "%" and divides a SUM by a
-non-distinct COUNT, compute the real ratio from 8547/8549's raw counts instead of trusting the
-chart's own number.** Escalate the whole dataset to whoever owns `dev_cefi.cube_onboarding_funnels`
-as one root-cause ticket, not one ticket per chart.
+**The real, mechanistic rule (replaces the old blanket "treat every % chart as suspect" rule):**
+every chart on this dataset (`dev_cefi.cube_onboarding_funnels`, datasource id 1117) follows one of
+two SQL shapes, and only one of them is broken:
+- **Safe shape — "Signup to X" family** (8453 Signup->KYC%, 8454 Signup->BAV%, 8455
+  Signup->Deposit%, 8456 Signup->NAP%, 8457 Signup->PAN%, 8531 Signup->FNAP%, and the whole
+  `8023-8030`/`8084-8088` "Signup to X" chart set): `SUM(x_converted)/COUNT(user_id)` — **both**
+  numerator and denominator are non-distinct, same `signup_date` anchor. The fan-out duplication
+  hits both sides proportionally and cancels out. **Verified accurate, trust these directly.**
+- **Broken shape — intermediate-stage family** (8458 PAN->Aadhar%, 8459 Aadhar->Selfie%, 8461
+  KYC->BAV%, 8462 BAV->Deposit%, 8543 Deposit->NAP%, 8555 selfie->InO%, 8556 InO->KYC%, likely 9173
+  Nap->Fnap%): `SUM(x_converted)/COUNT(DISTINCT case when <stage>_time is not null then user_id
+  end)` — denominator is distinct, numerator is **not**. A user who converted and has N duplicate
+  rows gets summed N times in the numerator but counted once in the denominator, inflating the
+  ratio by roughly N every time. **This is genuinely broken** — confirmed by both an impossible
+  result (8462 at 258-336%, KYC->BAV at 330-420%, Deposit->NAP at 415-445%, all logically
+  impossible) and by the mechanism now being fully understood, not just inferred from a bad value.
+
+**Practical fix, confirmed working 2026-10-04: don't average/divide the broken intermediate charts
+at all — derive step-to-step conversion from two "Signup to X" (safe-family) absolute counts
+instead.** E.g. for KYC->BAV%, don't touch chart 8461; instead take Signup->KYC% and Signup->BAV%
+(both safe), multiply each by that week's distinct Signups (chart 9322) to get absolute KYC and BAV
+counts, then divide BAV-count by KYC-count. Every step in the Signup→PAN→Aadhar→Selfie→KYC→BAV→
+Deposit→NAP chain can be reconstructed this way, fully bypassing the broken intermediate-stage
+charts and chart 8549 (which also uses the non-distinct-numerator pattern and should not be treated
+as a safe raw-count source — only 8547 is safe, not 8549, despite both living on the same
+"Steps - Absolute numbers" tab).
+
+**Caveat that still applies**: all of this is a **signup-cohort, no-fixed-window** view (a cohort's
+conversion keeps accumulating for as long as the data exists, not bounded to a calendar month) —
+the most recent 1-2 weeks of any pull will always read lower than reality simply because that
+cohort hasn't had time to finish converting yet. Don't read a recent-week decline on this family as
+a real trend without checking whether it's just cohort immaturity.
 
 **Automated as of 2026-10-01**: `fetch_chart.sh` now auto-flags this — any chart on datasource id
 1117 (this dataset) whose name contains "%" comes back with a non-null `caution` field warning to
 cross-check, so this no longer depends on remembering the rule by hand.
+
+**Correction, 2026-10-04: chart 8549 ("Onboarding Micro funnel steps converted users (#)") is NOT
+a safe raw-count cross-check source like 8547 is — it uses `sum(kyc_to_bav_converted)` etc., not
+`count(distinct ...)`, on the same fan-out-prone table.** It may carry the same duplicate-row
+inflation as the broken % charts. Use 8547 (which does use `count(distinct case when ... then
+user_id end)`) as the trusted raw-count source instead; don't treat 8549 as equivalent to 8547.
+Also, 8549 only covers KYC→BAV→Deposit→NAP→FNAP — it has no columns for the pre-KYC steps below.
+
+**New finding, 2026-10-04, corrected same day: of the pre-KYC micro-funnel % charts, 4 are broken
+and 1 is fine — don't lump them together.** 8458 PAN->Aadhar%, 8459 Aadhar->Selfie%, 8555
+selfie->InO%, 8556 InO->KYC% return literally impossible values (383–487%, i.e. >100%) — confirmed
+broken, same `COUNT(DISTINCT...)` denominator vs non-distinct `SUM` numerator mismatch as the
+macro-funnel's intermediate-stage family (8461, 8462, 8543). **8457 Signup->PAN%, however, uses the
+safe "Signup to X" shape** (`SUM(signup_to_pan_converted)/COUNT(user_id)`, both non-distinct, same
+family as 8453) — it was initially lumped in with the broken four on first discovery, which was a
+mistake corrected within the same day once the SQL shapes were actually compared side by side.
+Trust 8457 directly; don't cross-check it as if it were one of the other four.
+
+**No raw-count chart exists anywhere on the Onboarding dashboard (id 1000) for the pre-KYC steps**
+(PAN/Aadhaar/Selfie) to cross-check against — 8547/8549 both start at KYC_verified_users. A
+cross-check source was found elsewhere instead: **`dev_onboarding.cube_onboarding_kyc_audits`**,
+chart **356 "PAN Verified / Aadhaar Uploaded / Selfie Uploaded Users"** (lives on dashboards
+"CeFi:Onboarding Ops" / "Onboarding Ops 2.0", not the Onboarding dashboard itself). This chart has
+its own artifact, now diagnosed: **it's written at three different grains that collide on specific
+days** — a monthly rollup lands on the 1st of each month (~30x a normal day's value), a weekly
+rollup lands on every Monday (~3-7x normal), and every other day is a clean genuine-daily number.
+The chart's own `avg()` groupby doesn't separate these, so those specific days balloon. **Fix:
+exclude 1st-of-month and Monday rows, keep the rest.** Using 8 clean days (2026-09-24–27,
+29–30, 10-02–03) as of this pull: **PAN Verified → Aadhaar Uploaded ≈ 93.6%** (range 89.8–96.0%
+across those days), **Aadhaar Uploaded → Selfie Uploaded ≈ 97.9%** (range 96.4–100%) — both tight,
+consistent, and nowhere near the broken chart's impossible numbers. Reading: this layer of the
+funnel barely leaks once someone's PAN-verified; whatever drop-off is really happening inside KYC
+is concentrated either before PAN verification succeeds (retries/rejections that never register as
+"verified" in this counter) or after Selfie, at the name/identity-matching step feeding into KYC
+itself — consistent with the VOC finding that name-mismatch complaints dominate the KYC-stage
+contact volume. **Correction: Signup → PAN now has a trustworthy number after all** — see above,
+chart 8457 is in the safe "Signup to X" family, not the broken one. The flagged-as-untrustworthy
+state only applied until the SQL-shape comparison was actually done; it's resolved as of this pull.
+
+### Trusted primitives — Signup→Deposit funnel, quick reference (don't re-derive, just use these)
+
+The investigation above took real effort to sort safe from broken; this table is the payoff —
+look here first before re-deriving anything on this funnel.
+
+| Want | Use | Why it's safe |
+|---|---|---|
+| Signup → PAN % | Chart **8457** directly | Safe "Signup to X" shape, verified |
+| Signup → Aadhaar % | Chart **8024** / **8085** ("Signup to Aadhar") directly | Same safe shape |
+| Signup → Selfie % | Chart **8026** ("Signup to Selfie") directly | Same safe shape |
+| Signup → KYC % | Chart **8453** directly | Verified against independent distinct-signup cross-check across 13 weeks, within 1-2pp every time |
+| Signup → BAV % | Chart **8454** directly | Same safe shape as 8453 |
+| Signup → Deposit % | Chart **8455** directly | Same safe shape as 8453 |
+| Signup → NAP % | Chart **8456** directly | Same safe shape as 8453 |
+| Signup → FNAP % | Chart **8531** directly | Same safe shape (not independently re-verified, but same formula family) |
+| True distinct weekly Signups (absolute #) | Chart **9322** | `count(distinct case when signup_date is not null then user_id end)` — the ONLY safe absolute signup count found; do NOT use 8547's own `Signups` column, see below |
+| True distinct KYC/BAV/Deposit/NAP/FNAP (absolute #) | Chart **8547** | Every column except `Signups` itself uses `count(distinct case when ... then user_id end)` — trustworthy |
+| **Any intermediate-stage step** (PAN→Aadhaar, Aadhaar→Selfie, KYC→BAV, BAV→Deposit, Deposit→NAP) | **Don't use the direct chart** (8458/8459/8461/8462/8543 are all broken) — **derive it**: take two adjacent "Signup to X" % values (safe family above), multiply each by that week's distinct Signups (chart 9322) to get absolute counts, then divide | The only way to get a real step-to-step number for these pairs |
+| A true **calendar-month** version of any of the above (not weekly-cohort-blended) | `run_sql.sh` directly against `dev_cefi.cube_onboarding_funnels`, using `count(distinct user_id)` / `count(distinct case when <x>_time is not null then user_id end)` patterns, `GROUP BY date_trunc('month', signup_date)` | Confirmed working 2026-10-04; more accurate than blending weekly cohorts, no extra approximation |
+
+**Known traps, already paid for — don't re-pay them:**
+- 8547's own `Signups` column (`count(user_id)`, no DISTINCT) is ~5x inflated — use chart 9322 instead for the denominator.
+- 8549 is not a safe raw-count source despite living on the same tab as 8547 — it uses `sum(...)`, not `count(distinct...)`.
+- The whole family is a **signup-cohort, no-fixed-window** view — the most recent 1-2 weeks always read low from immaturity, not a real decline.
+- For live-day/live-month numbers on **Futures specifically** (AVPU/ATPU/DAU/MAU, not the onboarding funnel), the row-level `dev_databricks_models.stg_daily_trading_volume` table (confirmed live through today, not stale) is the right source via `run_sql.sh` — see its own entry below. Its `trades` column is execution/fill-level, not distinct order count — don't silently label it ATPU/AOV without that caveat.
+
+---
+
+## `dev_databricks_models.stg_daily_trading_volume` (live row-level trade data, not a dashboard)
+
+Discovered 2026-10-04 while chasing a Futures AVPU/ATPU/DAU question that the stale
+`cube_engagement_metrics` couldn't answer. **This table is genuinely live** — `max(trade_date)`
+returned today's date on direct query, not a stale cutoff — and it's row-level (one row per
+user/day/product/market/order_type/etc. combination, with a `trades` count and `volume_usdt`
+summed into that row), not a pre-aggregated cube. Also backs 40 charts on "Business Finance
+Dashboard" and a handful of orphaned/unattached charts (full list: Transacting Users trend/by-
+product/by-sub-product variants, a Compliance Volume Monitoring suite, and a Delta/API-volume
+suite for Futures that exists as charts but isn't on any dashboard) — see `search_charts.sh`
+output for `datasource_id=9` if that list is ever needed again.
+
+**Key columns**: `trade_date`, `user_id`, `product` (spot/futures/options/insta), `trades` (count —
+**fills/executions, not confirmed to equal distinct orders placed** — don't silently call this
+ATPU or AOV without that caveat), `volume_usdt`, plus dozens of dimension columns (channel, VIP
+level, order type, market, device, first-txn-per-product timestamps, etc.) for slicing further.
+
+**Confirmed-good queries via `run_sql.sh`** (database_id 8, the default):
+- Daily DAU/orders/volume for a product: `SELECT trade_date, count(distinct user_id), sum(trades), sum(volume_usdt) FROM dev_databricks_models.stg_daily_trading_volume WHERE product='<x>' AND trade_date >= '<date>' GROUP BY trade_date`
+- True monthly transacting users (real MAU/MTU, not a proxy): same query with `trade_date` bounded to a calendar month, no GROUP BY — e.g. Futures MTU for Sep 2026 = 177,100 (cross-validated exactly against the separate "Transacting Users Trend by Product" chart 10582 for the same month — this table and that chart agree).
+- AVPU = `sum(volume_usdt)/count(distinct user_id)` for whatever window — reliable, volume and user-distinctness both behave correctly here (unlike the broken onboarding-funnel family, this table has no known fan-out issue).
 
 ---
 
@@ -725,15 +858,31 @@ if ever asked to pull from here, POR/AUC/ALM terminology isn't established anywh
 inventory.
 
 ### Invest Business Dashboard [Spot Tracker] (id 824)
-Owners: NP, AT, AV, DD (4 total). Modified: 5 days ago.
-Tabs: Active Portfolios, Business summary, Acquisition, **Funnels**, Retention levers.
-Sample charts: Active portfolios trend/churn/retention %, Spot AUC & AUC/User, Volume/Fee/Take-rate
-(Spot & Insta), Spot Market Share, NAPs x Channels, New CAPs: D30 portfolio-churn, CAC: Referrals,
-**Signup -> NAP, Signup -> KYC, KYC -> BAV, BAV -> Deposit, Deposit -> NAP** (as native charts on
-the "Funnels" tab), Earn/SIP adoption metrics. This is the Spot-side counterpart to Futures
-Tracker (id 597) — notably was missing from Hawkeye's original 11-dashboard map despite Spot being
-a core business line. **Also has the full pre-NAP funnel natively built** — same flag as Acquisition
-Metrics (id 16) above: prefer this over reconstructing the funnel across multiple dashboards.
+Owners: Nishchal Prajapati, Aryan Tiwari, Anudeep Verma, Dibyansu Diptiman (4 total).
+
+**Full chart list pulled 2026-10-04 via `fetch_dashboard.sh`** (previously only shallow-indexed by
+name/owner/recency — this is now the real chart-id map, not yet deep-walked for actual values).
+5 tabs, 27 charts:
+- **Business summary**: Spot & Insta AVPU-ARPU (6821), Spot & Insta Transacting Users (6824),
+  Spot \| Insta Take Rate (8109), Volume: Insta & Spot (6842), Fee: SPOT & Insta (6843), Rejection
+  Rate (6823), Spot Market Share % : Major Indian Exchanges (5880), Global Spot Volume Ratio %
+  (3524)
+- **Active Portfolios**: Active portfolios trend (10824), x User-type (10825), Portfolio churn
+  (10826), Spot AUC/User (10827), Spot AUC (10928), New CAPs: D30 portfolio-churn (10929)
+- **Acquisition**: NAPs x Channels (6835), CAC: Referrals (9227)
+- **Funnels** (native pre-NAP funnel, all here): Signup -> KYC (7133), KYC -> BAV (7135), BAV ->
+  Deposit (7136), Deposit -> NAP (7137), Signup -> NAP (7138) — prefer this tab over reconstructing
+  the funnel across multiple dashboards, same flag as Acquisition Metrics (id 16) elsewhere in this
+  doc.
+- **Retention levers**: Portfolio retention % (10829), New Earn Users (10830), Earn adopted users
+  trend (10831), New SIP Users (10832), SIP Adopted Users Trend (10833), SIP Instalment success %
+  (10834), SIPs Cancelled Trend (6833), Earn AUC Trend (7102), Earn eligible AUC trend (7134)
+
+This is the Spot-side counterpart to Futures Tracker (id 597) — notably was missing from Hawkeye's
+original 11-dashboard map despite Spot being a core business line. Not yet deep-walked for actual
+values (all chart ids above are confirmed to exist and resolve via `fetch_dashboard.sh`, but none
+have been pulled with `fetch_chart.sh` yet to confirm live/graphical/broken status) — do that the
+first time a real question needs a number from here.
 
 ## Known issues
 

@@ -110,16 +110,37 @@ DATA_CODE=$(curl -s -o "$TMPDIR/data.json" -w "%{http_code}" \
   -X POST "$HAWKEYE_BASE/api/v1/chart/data" \
   --data @"$TMPDIR/qc.json")
 
+# Structural caution check — reads the chart's OWN executed SQL text and looks for the actual
+# mismatch mechanism (SUM(...) numerator vs COUNT(DISTINCT ...) denominator), rather than guessing
+# from the chart's name. Corrected 2026-10-04: an earlier version of this check keyed off whether
+# the name started with "Signup", which works today but breaks the moment a chart gets renamed —
+# this version reads the real SQL shape instead, which is what actually determines correctness.
+# Deliberately still gated to KNOWN_RISKY_DATASOURCE_IDS, not applied to every dataset: a
+# SUM(revenue)/COUNT(DISTINCT user_id) pattern is a completely normal, CORRECT way to compute AVPU
+# on a table that doesn't fan out — this check only means something on a table already confirmed to
+# duplicate rows per user. Applying it unscoped would flag a flood of perfectly fine metrics.
 build_caution() {
-  python3 -c "
-name = '''$CHART_NAME'''
-dsid = '''$DATASOURCE_ID'''
-risky = '''$KNOWN_RISKY_DATASOURCE_IDS'''.split(',')
-if dsid and dsid in risky and '%' in name:
-    print('This chart'+chr(39)+'s datasource (id '+dsid+') has a confirmed fan-out bug inflating SUM/COUNT percentages (see dashboard-inventory.md). Cross-check against a raw-count chart before trusting this value.')
+  # SQL passed via a temp file, never inline bash-to-python interpolation — SQL text routinely
+  # contains single quotes (date literals) which breaks naive substitution silently.
+  local sql_file="$1"
+  local dsid="$2"
+  SQL_FILE="$sql_file" DSID="$dsid" RISKY_IDS="$KNOWN_RISKY_DATASOURCE_IDS" python3 -c "
+import re, sys, os
+sql = open(os.environ['SQL_FILE']).read()
+dsid = os.environ['DSID']
+risky = os.environ['RISKY_IDS'].split(',')
+if not (dsid and dsid in risky and sql):
+    sys.exit(0)
+has_sum = bool(re.search(r'SUM\s*\(', sql, re.I))
+has_distinct_count = bool(re.search(r'COUNT\s*\(\s*DISTINCT', sql, re.I))
+has_plain_count = bool(re.search(r'COUNT\s*\(\s*(?!DISTINCT)\S', sql, re.I))
+# Risky shape: a non-distinct SUM paired with a denominator that's ONLY ever COUNT(DISTINCT...) —
+# no plain COUNT anywhere to confirm both sides match distinctness. This is the exact mechanism
+# confirmed broken on 8458/8459/8461/8462/8543/8555/8556 (see dashboard-inventory.md).
+if has_sum and has_distinct_count and not has_plain_count:
+    print('This chart'+chr(39)+'s SQL pairs a non-distinct SUM numerator with a COUNT(DISTINCT...) denominator on a dataset with a confirmed row-fan-out bug — see dashboard-inventory.md (cube_onboarding_funnels section). This exact shape has been confirmed to inflate past 100% on other charts. Cross-check against two \"Signup to X\" absolute counts instead of trusting this value directly.')
 "
 }
-CAUTION=$(build_caution)
 
 if [ "$DATA_CODE" = "400" ]; then
   RESULT=$(python3 -c "
@@ -139,7 +160,7 @@ out = {
     'colnames': None,
     'data': None,
     'sql': None,
-    'caution': '''$CAUTION''' or None,
+    'caution': None,
 }
 print(json.dumps(out))
 ")
@@ -153,6 +174,13 @@ if [ "$DATA_CODE" != "200" ]; then
   cat "$TMPDIR/data.json" >&2
   exit 1
 fi
+
+python3 -c "
+import json
+d = json.load(open('$TMPDIR/data.json'))
+open('$TMPDIR/chart_sql.txt', 'w').write(d['result'][0].get('query') or '')
+"
+CAUTION=$(build_caution "$TMPDIR/chart_sql.txt" "$DATASOURCE_ID")
 
 RESULT=$(python3 -c "
 import json
