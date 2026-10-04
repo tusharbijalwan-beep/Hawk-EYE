@@ -1,6 +1,6 @@
 # Hawkeye View
 
-A Claude Code skill that answers business questions straight out of Superset — ask in plain
+A Claude Code Agent that answers business questions straight out of Superset — ask in plain
 language, get a real number back, no dashboard-clicking.
 
 ## Capabilities
@@ -10,10 +10,7 @@ language, get a real number back, no dashboard-clicking.
 - **Full-catalog reach, not just pre-mapped dashboards.** Search across every dashboard and chart
   Superset has, not only the ones already documented — a metric nobody's asked about before is a
   search away, not a dead end.
-- **Direct SQL when nothing existing covers the question.** Not limited to what a saved chart
-  already computes — can write and run new SQL directly against the warehouse (via Superset's own
-  SQL Lab, under the invoking user's own permissions) for a grouping or window no existing chart
-  supports.
+
 - **Cross-dashboard and cross-metric comparison.** Checking whether two dashboards reporting the
   "same" number actually agree, or ranking several business lines against each other on a shared
   metric.
