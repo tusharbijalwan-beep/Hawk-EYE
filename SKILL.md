@@ -536,3 +536,30 @@ A finding that hasn't cleared this bar yet should be written as a hypothesis ("t
 inflated, unconfirmed — needs an independent check"), not as a confirmed bug with a standing
 cross-dataset rule attached. Downgrading an uncertain finding costs nothing; a wrongly-confirmed
 one propagates into every answer that trusts the inventory afterward.
+
+## No derived metrics — always pull the exact source, standing rule as of 2026-10-05
+
+A second real mistake, same root cause as the one above, happened again on 2026-10-05: a run
+reported "KYC→BAV fell 94.4%→89.3%, a -5pt secondary dip" by dividing two independently-anchored
+`signup_to_X_converted` counts instead of reading the actual KYC→BAV chart. It was wrong — the
+real, chart-verified number was 80.2%→79.9%, flat, no dip at all. The two counts each measure
+conversion within a fixed window *from signup*, not from the prior milestone's own timestamp, so
+dividing them is not equivalent to the true step-to-step rate. It happened to look plausible for
+most steps and broke specifically here — caught only because the person asking happened to check
+the live dashboard themselves.
+
+**Standing rule, applies everywhere in this skill, not just the onboarding funnel: never compute a
+metric by arithmetic on other pulled numbers (dividing, multiplying, subtracting two different
+metrics to approximate a third) when a direct source for that exact metric exists.** Pull the real
+chart, run the real query, or inject the real filter — even if that takes an extra
+`fetch_chart.sh`/`run_sql.sh` call or means hand-building a filtered `query_context` (see the
+`dashboard-inventory.md` "Onboarding dashboard" section's 2026-10-05 correction for the working
+pattern: inject filters into a chart's own `query_context` and POST to `/api/v1/chart/data`
+directly, which also survives a `run_sql.sh`/SQL-Lab outage).
+
+If, and only if, no direct source exists anywhere (checked via `search_charts.sh` /
+`search_dashboards.sh` / the inventory first), a derived approximation is the fallback — but it
+must be reported as exactly that: "~Xpt, approximated from Y and Z, not read directly — treat as
+a hypothesis" — never with the same confidence as a number read straight from its own source. This
+is the same discipline the Verification standard above already demands for "confirmed bug"
+findings; it now applies to every number this skill reports, not just bug claims.

@@ -651,6 +651,50 @@ charts and chart 8549 (which also uses the non-distinct-numerator pattern and sh
 as a safe raw-count source — only 8547 is safe, not 8549, despite both living on the same
 "Steps - Absolute numbers" tab).
 
+**MAJOR CORRECTION, 2026-10-05: the "derive step-to-step from two Signup-to-X counts" fix above
+(lines immediately preceding) is itself unreliable and produced a real false finding — don't use it
+anymore now that a better method exists (see below).** Caught live: a Hawkeye run reported "KYC→BAV
+fell 94.4%→89.3% (-5pt)" for the week of Sep 28 2026 by dividing `signup_to_bav_converted` by
+`signup_to_kyc_converted` (both from chart-equivalent absolute counts). The real, chart-verified
+number (see new method below) was **80.2%→79.9% — flat, no dip at all.** Root cause: `signup_to_X`
+flags are each independently anchored to a fixed window **from signup**, not chained from the prior
+milestone's own timestamp — dividing two of them does not equal the true step-to-step transition
+rate (which depends on elapsed time between the two specific milestones, e.g. KYC time → BAV time).
+This approximation happened to track closely for most steps but broke specifically for KYC→BAV.
+**Treat any number produced by this old method as an unverified approximation, not a confirmed
+finding — re-derive via the method below before reporting a specific pointed claim (e.g. "step X
+dropped by Ypt") to anyone.**
+
+**New finding, same day, that makes the old workaround unnecessary: `conversion_window` is a literal
+row-level column on `dev_cefi.cube_onboarding_funnels`** (confirmed via direct `SELECT *`), with
+values like `'1d'`, `'7d'` etc. — **table grain is one row per (user_id, conversion_window)**, not
+one row per user. This fully explains the original "broken intermediate family" fan-out bug: an
+**unfiltered** query sums `SUM(x_converted)` across every conversion_window duplicate per user while
+`COUNT(DISTINCT user_id)` collapses them — inflating the ratio by roughly the number of window
+variants. **Once filtered to a single `conversion_window` value, each user has exactly one row, the
+fan-out disappears, and the "broken" charts (8458, 8459, 8461, 8462, 8543, 8555, 8556) become
+genuinely safe and should be trusted directly** — confirmed by pulling all of them filtered to
+`conversion_window IN ('1d')` + `orm_tagging IN ('marketing','organic')` and finding internally
+consistent, non-impossible values (40–95% range, nothing over 100%) that reconciled exactly with a
+live Superset dashboard screenshot using the same native filters.
+
+**Practical method, confirmed working 2026-10-05, supersedes the old "derive from two Signup-to-X
+counts" fix above**: pull the actual intermediate-stage chart (8458/8459/8461/8462/8543/8555/8556),
+but inject `{'col':'conversion_window','op':'IN','val':['<window>']}` into every query in its
+`query_context.queries[]`, alongside any other native filter the question needs (e.g.
+`{'col':'orm_tagging','op':'IN','val':['marketing','organic']}`), before POSTing to
+`/api/v1/chart/data` — same mechanism a dashboard's native filters use under the hood. This gives
+the exact number a human would see on the live filtered dashboard, not an approximation. **Also
+works as a fallback when `run_sql.sh` (SQL Lab's `/api/v1/sqllab/execute/`) is down** — confirmed
+2026-10-05 during a real SQL Lab outage (503/504 on every attempt, including a trivial `SELECT 1`)
+while `/api/v1/chart/data` stayed fully healthy throughout. `fetch_chart.sh` itself doesn't yet
+support injecting extra filters (it only overrides the TEMPORAL_RANGE value) — until it does, build
+the filtered query_context by hand the way this fix did: fetch `/api/v1/chart/<id>`, parse
+`query_context`, append filter dicts to each `queries[].filters` list, POST to `/api/v1/chart/data`.
+**One subtlety to watch**: each intermediate chart buckets by the week of its *own* left-hand
+milestone's timestamp (e.g. PAN→Aadhaar% buckets by week of `pan_verified_time`, not
+`signup_date`) — check `colnames[0]` on each pull rather than assuming `signup_date` throughout.
+
 **Caveat that still applies**: all of this is a **signup-cohort, no-fixed-window** view (a cohort's
 conversion keeps accumulating for as long as the data exists, not bounded to a calendar month) —
 the most recent 1-2 weeks of any pull will always read lower than reality simply because that
@@ -716,7 +760,7 @@ look here first before re-deriving anything on this funnel.
 | Signup → FNAP % | Chart **8531** directly | Same safe shape (not independently re-verified, but same formula family) |
 | True distinct weekly Signups (absolute #) | Chart **9322** | `count(distinct case when signup_date is not null then user_id end)` — the ONLY safe absolute signup count found; do NOT use 8547's own `Signups` column, see below |
 | True distinct KYC/BAV/Deposit/NAP/FNAP (absolute #) | Chart **8547** | Every column except `Signups` itself uses `count(distinct case when ... then user_id end)` — trustworthy |
-| **Any intermediate-stage step** (PAN→Aadhaar, Aadhaar→Selfie, KYC→BAV, BAV→Deposit, Deposit→NAP) | **Don't use the direct chart** (8458/8459/8461/8462/8543 are all broken) — **derive it**: take two adjacent "Signup to X" % values (safe family above), multiply each by that week's distinct Signups (chart 9322) to get absolute counts, then divide | The only way to get a real step-to-step number for these pairs |
+| **Any intermediate-stage step** (PAN→Aadhaar, Aadhaar→Selfie, KYC→BAV, BAV→Deposit, Deposit→NAP) | **Use the direct chart** (8458/8459/8461/8462/8543), but inject a `conversion_window` filter (e.g. `IN ('1d')`) into its query_context before calling `/api/v1/chart/data` — see the 2026-10-05 correction above | Safe once filtered to one `conversion_window` value (eliminates the fan-out). **Do NOT** derive it by dividing two "Signup to X" counts — confirmed to produce false findings (a fake -5pt KYC→BAV dip that didn't exist) |
 | A true **calendar-month** version of any of the above (not weekly-cohort-blended) | `run_sql.sh` directly against `dev_cefi.cube_onboarding_funnels`, using `count(distinct user_id)` / `count(distinct case when <x>_time is not null then user_id end)` patterns, `GROUP BY date_trunc('month', signup_date)` | Confirmed working 2026-10-04; more accurate than blending weekly cohorts, no extra approximation |
 
 **Known traps, already paid for — don't re-pay them:**
